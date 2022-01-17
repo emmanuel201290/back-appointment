@@ -14,6 +14,7 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,6 +37,8 @@ public class Init {
     int port=3306;
     String user="root";
     String password="";
+    private String cadConnection="jdbc:mysql://localhost:3306/clinica";
+    
     Encrypt encryp=new Encrypt();
     
     @GET
@@ -73,6 +76,9 @@ public class Init {
                 }
               
                JSONArray jr = new JSONArray(response.toString());
+               
+               //Obtener todo los usuarios registrados
+               int indice = countUser();
                 
                for(int i=1;i<=jr.length();i++){
                    
@@ -91,7 +97,8 @@ public class Init {
                         String dia = jo.getJSONArray("disponibilidad").getJSONObject(j).getString("dia");
                         String hStart = jo.getJSONArray("disponibilidad").getJSONObject(j).getString("horaInicio");
                         String hEnd = jo.getJSONArray("disponibilidad").getJSONObject(j).getString("horaFin");
-	                insertDisp(dia, hStart, hEnd, i);
+	                insertDisp(dia, hStart, hEnd, indice);
+                        indice++;
                       }
                      }  
                   }
@@ -147,4 +154,29 @@ public class Init {
             Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    
+     public int countUser(){
+        ResultSet result;
+        int count=1;
+        try {  
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection con=DriverManager.getConnection(cadConnection,user,password); 
+            PreparedStatement stmt=con.prepareStatement("select * from usuario ");  
+            ResultSet data = stmt.executeQuery();
+            
+            if (data.last()) 
+            {
+                count= data.getRow();
+            }
+              
+            con.close();
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return count;
+    }
 }
+
+

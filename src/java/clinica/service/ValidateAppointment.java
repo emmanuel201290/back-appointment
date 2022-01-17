@@ -135,15 +135,16 @@ public class ValidateAppointment {
                   msj = "Horas fuera de rango ["+data.getString("horaInicio")+"] - ["+data.getString("horaFin")+"]";
                   return msj;
               }
-              String citasReg = validCitaReg(dia);
-              if(citasReg!=null){
-                  return citasReg;
-              }
+              
+               String medicoDispPorPaciente = validCitaReg();
+               if(medicoDispPorPaciente!=null){
+                   return medicoDispPorPaciente;
+               }
              
-                /*String medicoDisp = countCitasByMed();
+                String medicoDisp = countCitasByMed();
                 if(medicoDisp!=null){
                     return medicoDisp;
-                }*/
+                }
                 
               msj= "ok";
             }else{
@@ -189,7 +190,7 @@ public class ValidateAppointment {
       
     }
   
-    public String validCitaReg(String dia){
+    public String validCitaReg(){
          //Validar si el usuario ya se encuentra registrado el mismo dia
         // con mismo medico
          ResultSet result;
@@ -198,12 +199,17 @@ public class ValidateAppointment {
             Connection con=DriverManager.getConnection(cadConnection,user,pass); 
             PreparedStatement stmt=con.prepareStatement("select * from citas where id_medico=? and id_usuario=?");  
             stmt.setInt(1,Integer.parseInt(idMedico));
-            stmt.setString(2,idUserActivo);
+            stmt.setInt(2,Integer.parseInt(idUserActivo));
+            
             ResultSet data = stmt.executeQuery();
-        
-            if(data.getRow()!= 0) { 
-             return "Tiene una cita registrada con el medico seleccionado";
+            
+            if (data.last()) 
+            {
+                if(data.getRow()>=1){
+                    return "No puedes reservar otra cita con este medico";
+                }
             }
+        
               
             con.close();
         } catch (ClassNotFoundException ex) {
@@ -220,14 +226,16 @@ public class ValidateAppointment {
         try {  
             Class.forName("com.mysql.jdbc.Driver");
             Connection con=DriverManager.getConnection(cadConnection,user,pass); 
-            PreparedStatement stmt=con.prepareStatement("select * from citas where id_medico=?");  
+            PreparedStatement stmt=con.prepareStatement("select * from citas where id_medico=? ");  
             stmt.setInt(1,Integer.parseInt(idMedico));
+            System.out.println("id medico es: "+idMedico);
             ResultSet data = stmt.executeQuery();
-            if(data.next()) { 
-              count++;
-            }
-            if(count>=5){
-                return "Este medico no puede aceptar mas citas";
+            
+            if (data.last()) 
+            {
+                if(data.getRow()>=6){
+                    return "Este medico no puede aceptar mas citas";
+                }
             }
               
             con.close();
@@ -238,10 +246,7 @@ public class ValidateAppointment {
         }
         return null;
     }
-    
-    
-    
-    
+     
     public int convertHour(int h, String completeHour){
         int horaPm=12;
         String flgPm=completeHour.substring(completeHour.length()-2, completeHour.length());
