@@ -2,7 +2,7 @@
 servicio web del proyecto appointment
 
 #Configuraciones necesarias
-JAVA WEB APPLICATION corriendo bajo un contenedor tomcat y base de datos mysql
+JAVA WEB APPLICATION corriendo bajo un contenedor glasfish y base de datos mysql
 
 #Librerias utilizadas
 En la carpeta libraries estan las librerias que utiliza el sistema para funcionar, debes importarlas al momento de cargar el sistema
