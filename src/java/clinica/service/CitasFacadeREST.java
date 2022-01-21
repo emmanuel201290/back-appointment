@@ -78,11 +78,13 @@ public class CitasFacadeREST extends AbstractFacade<Citas> {
         LocalDateTime now = LocalDateTime.now();
         String current = dtf.format(now);
     
-        Query q = em.createNativeQuery("SELECT * FROM citas u where u.id_medico='"+id+"' and u.fecha_registro='"+current+"'", Citas.class);
+        Query q = em.createNamedQuery("Citas.findByIdMedAndDate", Citas.class);
+        q.setParameter("idMedico", Integer.parseInt(id));
+        q.setParameter("fechaRegistro", current);
         List<Citas> bItems =  q.getResultList();
         return bItems;
     }
-
+    
     @GET
     @Path("{from}/{to}")
     @Produces({"application/xml", "application/json"})
@@ -100,5 +102,24 @@ public class CitasFacadeREST extends AbstractFacade<Citas> {
     @Override
     protected EntityManager getEntityManager() {
         return em;
+    }
+    
+    public String findByIdMed(String idMedico){
+        Query q = em.createNamedQuery("Citas.findByIdMedico", Citas.class);
+        q.setParameter("idMedico", Integer.parseInt(idMedico));
+        if(q.getResultList().size()> 6){
+             return "Este medico no puede aceptar mas citas";
+        }
+        return null;
+    }
+    
+    public String findByMedAndUser(String idMedico, String idUser){
+        Query q = em.createNamedQuery("Citas.findByMedAndUser", Citas.class);
+        q.setParameter("idMedico", Integer.parseInt(idMedico));
+        q.setParameter("idUsuario", Integer.parseInt(idUser));
+        if(q.getResultList().size() >= 1){
+             return "No puedes reservar otra cita con este medico";
+        }
+        return null;
     }
 }

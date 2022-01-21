@@ -6,14 +6,7 @@
 package clinica.service;
 
 import clinica.entities.Usuario;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -54,20 +47,19 @@ public class UsuarioFacadeREST extends AbstractFacade<Usuario> {
         
         String passEncrypt = encryp.Encrtype(password);
         entity.setPassword(passEncrypt);
-        
-        //Generando id 
-        entity.setIdUsuario(super.count()+1);
-       
-        //Verificar si existe el usuario
-        Query q = em.createNativeQuery("SELECT u.nombre FROM usuario u where u.nombre='"+nombre+"'");
+        Query q = em.createNamedQuery("Usuario.findByNombre", Usuario.class);
+        q.setParameter("nombre", nombre);
         List<Usuario> bItems = q.getResultList();
-        if(bItems.size()!= 0){
-           System.out.println("Usuario ya existe");
-           
+       if(bItems.isEmpty()){
+          super.create(entity);
         }else{
-           super.create(entity);    
+            System.out.println("Usuario ya existe");
         }
      }
+    
+    public void createAutomatical(Usuario entity){
+        super.create(entity);
+    }
 
     @PUT
     @Path("{id}")
@@ -109,18 +101,17 @@ public class UsuarioFacadeREST extends AbstractFacade<Usuario> {
     @Path("login")
     @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
     public List<Usuario> login(Usuario entity){
-      
         String nombre = entity.getNombre();
         String password = entity.getPassword();
        
-        //String passEnc = ecnode(secretKey, password );
-        // readUser(nombre, passEnc);
         Encrypt encryp = new Encrypt();
         String passCif = encryp.Encrtype(password);
         
-        Query q = em.createQuery("SELECT u FROM Usuario u where u.nombre='"+nombre+"' and u.password='"+passCif+"'",Usuario.class);
+        Query q = em.createNamedQuery("Usuario.findByUserAndPass",Usuario.class);
+        q.setParameter("nombre", nombre);
+        q.setParameter("password", passCif);
        
-         List<Usuario> bItems =  q.getResultList();
+         List<Usuario> bItems = q.getResultList();
          if (bItems == null || bItems.isEmpty()) {
           return  null;
          }
@@ -145,31 +136,4 @@ public class UsuarioFacadeREST extends AbstractFacade<Usuario> {
     protected EntityManager getEntityManager() {
         return em;
     }
-    
-
-     public String readUser(String user,String password){
-        ResultSet result;
-        String msj="";
-        
-        try {  
-            Class.forName("com.mysql.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/clinica","root",""); 
-            PreparedStatement stmt=con.prepareStatement("select * from usuario where nombre=? and password=?");  
-            stmt.setString(1,user);
-            stmt.setString(2,password);
-            ResultSet data = stmt.executeQuery();
-            if(data.next()) { 
-              return data.getString("password");
-            }else{
-              msj = "medico no disponible";
-            }
-            con.close();
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SQLException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        }
-       return msj;
-    }
-
 }

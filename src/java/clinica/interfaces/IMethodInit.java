@@ -10,8 +10,7 @@ package clinica.interfaces;
  * @author Usuario
  */
 public interface IMethodInit {
-    
-    void llenarUsuario();
+   void llenarUsuario();
     void llenarDisponibilidad();
     
 }

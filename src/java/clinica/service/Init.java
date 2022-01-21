@@ -5,19 +5,18 @@
  */
 package clinica.service;
 
+import clinica.entities.Disponibilidad;
+import clinica.entities.Usuario;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ejb.EJB;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -34,13 +33,15 @@ import org.json.JSONObject;
 
 @Path("init")
 public class Init {
-    int port=3306;
-    String user="root";
-    String password="";
-    private String cadConnection="jdbc:mysql://localhost:3306/clinica";
     
     Encrypt encryp=new Encrypt();
     
+    @EJB
+    private UsuarioFacadeREST ufr;   
+    
+    @EJB
+    private DisponibilidadFacadeREST dfr;
+ 
     @GET
     @Produces
     @Consumes({MediaType.APPLICATION_JSON})
@@ -76,31 +77,28 @@ public class Init {
                 }
               
                JSONArray jr = new JSONArray(response.toString());
-               
-               //Obtener todo los usuarios registrados
-               int indice = countUser();
                 
-               for(int i=1;i<=jr.length();i++){
-                   
+               for(int i=0;i<jr.length();i++){
+                //Obtener todo los usuarios registrados
+                 int indice = countUser();
                    JSONObject jo = jr.getJSONObject(i);
                    if (jo.has("nombre")) {
                    {
-                   String name = jo.getString("nombre");
+                    String name = jo.getString("nombre");
                    
-                   //Llenando Tabla de usuarios
-                   insertUser(name);
+                    //Llenando Tabla de usuarios
+                    insertUser(name);
                    
-                   //Llenando tabla disponibilidad
-                   JSONArray totalDisp = jo.getJSONArray("disponibilidad");
+                    //Llenando tabla disponibilidad
+                    JSONArray totalDisp = jo.getJSONArray("disponibilidad");
                    
                      for(int j=0; j<totalDisp.length() ; j++){
                         String dia = jo.getJSONArray("disponibilidad").getJSONObject(j).getString("dia");
                         String hStart = jo.getJSONArray("disponibilidad").getJSONObject(j).getString("horaInicio");
                         String hEnd = jo.getJSONArray("disponibilidad").getJSONObject(j).getString("horaFin");
 	                insertDisp(dia, hStart, hEnd, indice);
-                        indice++;
                       }
-                     }  
+                    }  
                   }
                }
                reader.close();
@@ -114,69 +112,28 @@ public class Init {
     }
     
     public void insertUser(String name){
-        String passEncryp = encryp.Encrtype("temporal123");
+         String passEncryp = encryp.Encrtype("temporal123");
         
-        try {  
-            Class.forName("com.mysql.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/clinica",user,password); 
-            PreparedStatement stmt=con.prepareStatement("insert into usuario values(?,?,?,?)");  
-            stmt.setInt(1,0);
-            stmt.setString(2,name);
-            stmt.setString(3, passEncryp);
-            stmt.setString(4, "medico");
-  
-            int i=stmt.executeUpdate(); 
-            
-            con.close();  
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SQLException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        }
+         Usuario usr = new Usuario();
+         usr.setNombre(name);
+         usr.setPassword(passEncryp);
+         usr.setRol("medico");
+         ufr.createAutomatical(usr);
     }
     
     public void insertDisp(String day, String hStart, String hEnd, int key ){
-         try {  
-            Class.forName("com.mysql.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/clinica",user,password); 
-            PreparedStatement stmt=con.prepareStatement("insert into disponibilidad values(?,?,?,?,?)");  
-            stmt.setInt(1,0);
-            stmt.setInt(2,key+1);
-            stmt.setString(3,day);
-            stmt.setString(4, hStart);
-            stmt.setString(5, hEnd);
-  
-            int i=stmt.executeUpdate();  
-            con.close();  
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SQLException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        Disponibilidad d = new Disponibilidad();
+        d.setIdDisponibilidad(0);
+        d.setIdUsuario(key+1);
+        d.setDia(day);
+        d.setHoraInicio(hStart);
+        d.setHoraFin(hEnd);
+        
+        dfr.createAutomatical(d);
     }
     
      public int countUser(){
         ResultSet result;
-        int count=1;
-        try {  
-            Class.forName("com.mysql.jdbc.Driver");
-            Connection con=DriverManager.getConnection(cadConnection,user,password); 
-            PreparedStatement stmt=con.prepareStatement("select * from usuario ");  
-            ResultSet data = stmt.executeQuery();
-            
-            if (data.last()) 
-            {
-                count= data.getRow();
-            }
-              
-            con.close();
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SQLException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return count;
+        return ufr.count();
     }
 }
-
-

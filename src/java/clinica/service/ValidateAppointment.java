@@ -6,22 +6,20 @@
 package clinica.service;
 
 import clinica.entities.Citas;
+import clinica.entities.Disponibilidad;
 import clinicaEnum.EnumDay;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.persistence.EntityManager;
+import javax.ejb.EJB;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -34,10 +32,12 @@ import javax.ws.rs.core.MediaType;
  */
 @Path("validate")
 public class ValidateAppointment {
-    private EntityManager em;
-    private String cadConnection="jdbc:mysql://localhost:3306/clinica";
-    private String user="root";
-    private String pass = "";
+    @EJB
+    private CitasFacadeREST cfr;
+    @EJB
+    private DisponibilidadFacadeREST dfr;
+    
+    Citas c = new Citas();
     
     String hInicio= "";
     String hFin = "";
@@ -114,47 +114,36 @@ public class ValidateAppointment {
          
    }
     
-    public String readDisp(int id_disponibilidad, String dia){
+    public String readDisp(int id_UsuarioMed, String dia){
         ResultSet result;
         String msj="";
-        try {  
-            Class.forName("com.mysql.jdbc.Driver");
-            Connection con=DriverManager.getConnection(cadConnection,user,pass); 
-            PreparedStatement stmt=con.prepareStatement("select * from disponibilidad where id_usuario=? and dia=?");  
-            stmt.setInt(1,id_disponibilidad);
-            stmt.setString(2,dia);
-            ResultSet data = stmt.executeQuery();
-            if(data.next()) { 
-              
-             //Validar que la hora este en rango disponible
-              int hInicioParseBd = Integer.parseInt(data.getString("horaInicio").split(":")[0]);
-              int hFinParseBd = Integer.parseInt(data.getString("horaFin").split(":")[0]);
-                     
-              if(Integer.parseInt(hInicio.split(":")[0])<  convertHour(hInicioParseBd,data.getString("horaInicio")) || 
-                 Integer.parseInt(hFin.split(":")[0])>  convertHour(hFinParseBd,data.getString("horaFin"))  ){
-                  msj = "Horas fuera de rango ["+data.getString("horaInicio")+"] - ["+data.getString("horaFin")+"]";
-                  return msj;
-              }
-              
-               String medicoDispPorPaciente = validCitaReg();
+        List<Disponibilidad> lst = dfr.findByIdUsuarioAndDia(id_UsuarioMed, dia);
+        
+        
+        if(!lst.isEmpty()){
+            int hInicioParseBd = Integer.parseInt(lst.get(0).getHoraInicio().split(":")[0]);
+            int hFinParseBd = Integer.parseInt(lst.get(0).getHoraFin().split(":")[0]);
+           
+            if(Integer.parseInt(hInicio.split(":")[0])<  convertHour(hInicioParseBd,lst.get(0).getHoraInicio()) || 
+                Integer.parseInt(hFin.split(":")[0])>  convertHour(hFinParseBd,lst.get(0).getHoraFin())){
+                msj = "Horas fuera de rango ["+lst.get(0).getHoraInicio()+"] - ["+lst.get(0).getHoraFin()+"]";
+                return msj;
+            }
+            
+             String medicoDispPorPaciente = validCitaReg();
                if(medicoDispPorPaciente!=null){
                    return medicoDispPorPaciente;
                }
              
-                String medicoDisp = countCitasByMed();
-                if(medicoDisp!=null){
+             String medicoDisp = countCitasByMed();
+              if(medicoDisp!=null){
                     return medicoDisp;
                 }
-                
-              msj= "ok";
-            }else{
-              msj = "medico no disponible";
-            }
-            con.close();
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SQLException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
+             
+            msj="ok";
+
+        }else{
+            msj = "medico no disponible";
         }
        return msj;
     }
@@ -165,86 +154,27 @@ public class ValidateAppointment {
            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd");
            LocalDateTime now = LocalDateTime.now();
            String current = dtf.format(now);
-        
-           try {  
-            Class.forName("com.mysql.jdbc.Driver");
-            Connection con=DriverManager.getConnection(cadConnection,user,pass); 
-            PreparedStatement stmt=con.prepareStatement("insert into citas values(?,?,?,?,?,?,?,?,?)");  
-            stmt.setInt(1,0);
-            stmt.setInt(2,idMedico);
-            stmt.setString(3,idUsuarioActive);
-            stmt.setString(4, ""+dateFechaVisita);
-            stmt.setString(5, hInicio);
-            stmt.setString(6, hFin);
-            stmt.setString(7, diaEnum);
-            stmt.setString(8, current);
-            stmt.setString(9, nombrePaciente);
-  
-            int i=stmt.executeUpdate();  
-            con.close();  
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SQLException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        }
-      
+           
+           c.setId(0);
+           c.setIdMedico(idMedico);
+           c.setIdUsuario(Integer.parseInt(idUsuarioActive));
+           c.setFechaVisita(""+dateFechaVisita);
+           c.setHoraInicio(hInicio);
+           c.setHoraFin(hFin);
+           c.setDia(diaEnum);
+           c.setFechaRegistro(current);
+           c.setNombrePaciente(nombrePaciente);
+           cfr.create(c);
     }
   
     public String validCitaReg(){
          //Validar si el usuario ya se encuentra registrado el mismo dia
         // con mismo medico
-         ResultSet result;
-        try {  
-            Class.forName("com.mysql.jdbc.Driver");
-            Connection con=DriverManager.getConnection(cadConnection,user,pass); 
-            PreparedStatement stmt=con.prepareStatement("select * from citas where id_medico=? and id_usuario=?");  
-            stmt.setInt(1,Integer.parseInt(idMedico));
-            stmt.setInt(2,Integer.parseInt(idUserActivo));
-            
-            ResultSet data = stmt.executeQuery();
-            
-            if (data.last()) 
-            {
-                if(data.getRow()>=1){
-                    return "No puedes reservar otra cita con este medico";
-                }
-            }
-        
-              
-            con.close();
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SQLException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
+         return cfr.findByMedAndUser(idMedico, idUserActivo);
     }
-    
-     public String countCitasByMed(){
-        ResultSet result;
-        int count=0;
-        try {  
-            Class.forName("com.mysql.jdbc.Driver");
-            Connection con=DriverManager.getConnection(cadConnection,user,pass); 
-            PreparedStatement stmt=con.prepareStatement("select * from citas where id_medico=? ");  
-            stmt.setInt(1,Integer.parseInt(idMedico));
-            System.out.println("id medico es: "+idMedico);
-            ResultSet data = stmt.executeQuery();
-            
-            if (data.last()) 
-            {
-                if(data.getRow()>=6){
-                    return "Este medico no puede aceptar mas citas";
-                }
-            }
-              
-            con.close();
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SQLException ex) {
-            Logger.getLogger(Init.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
+     
+    public String countCitasByMed(){
+        return cfr.findByIdMed(idMedico);
     }
      
     public int convertHour(int h, String completeHour){

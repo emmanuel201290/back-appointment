@@ -20,19 +20,21 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  *
- * @author em628
+ * @author Usuario
  */
 @Entity
 @Table(name = "disponibilidad")
 @XmlRootElement
 @NamedQueries({
-    @NamedQuery(name = "Disponibilidad.findAll", query = "SELECT d FROM Disponibilidad d"),
-    @NamedQuery(name = "Disponibilidad.findByIdDisponibilidad", query = "SELECT d FROM Disponibilidad d WHERE d.idDisponibilidad = :idDisponibilidad"),
-    @NamedQuery(name = "Disponibilidad.findByIdUsuario", query = "SELECT d FROM Disponibilidad d WHERE d.idUsuario = :idUsuario"),
-    @NamedQuery(name = "Disponibilidad.findByDia", query = "SELECT d FROM Disponibilidad d WHERE d.dia = :dia"),
-    @NamedQuery(name = "Disponibilidad.findByHoraInicio", query = "SELECT d FROM Disponibilidad d WHERE d.horaInicio = :horaInicio"),
-    @NamedQuery(name = "Disponibilidad.findByHoraFin", query = "SELECT d FROM Disponibilidad d WHERE d.horaFin = :horaFin")})
+    @NamedQuery(name = "Disponibilidad.findAll", query = "SELECT d FROM Disponibilidad d")
+    , @NamedQuery(name = "Disponibilidad.findByIdDisponibilidad", query = "SELECT d FROM Disponibilidad d WHERE d.idDisponibilidad = :idDisponibilidad")
+    , @NamedQuery(name = "Disponibilidad.findByIdUsuario", query = "SELECT d FROM Disponibilidad d WHERE d.idUsuario = :idUsuario")
+    , @NamedQuery(name = "Disponibilidad.findByIdUsuarioAndDia", query = "SELECT d FROM Disponibilidad d WHERE d.idUsuario = :idUsuario AND d.dia = :dia")    
+    , @NamedQuery(name = "Disponibilidad.findByDia", query = "SELECT d FROM Disponibilidad d WHERE d.dia = :dia")
+    , @NamedQuery(name = "Disponibilidad.findByHoraInicio", query = "SELECT d FROM Disponibilidad d WHERE d.horaInicio = :horaInicio")
+    , @NamedQuery(name = "Disponibilidad.findByHoraFin", query = "SELECT d FROM Disponibilidad d WHERE d.horaFin = :horaFin")})
 public class Disponibilidad implements Serializable {
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

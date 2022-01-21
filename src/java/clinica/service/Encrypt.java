@@ -5,9 +5,15 @@
  */
 package clinica.service;
 
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.swing.JOptionPane;
@@ -21,7 +27,6 @@ public class Encrypt {
     private String secretKey = "desarrollwebServiceclinicaNicasource";
     
     public void Encrypt(){
-        
     }
     
     public String Encrtype(String cadena){
@@ -37,8 +42,8 @@ public class Encrypt {
             byte[] buf = cifrado.doFinal(plainTextBytes);
             String encoded = DatatypeConverter.printBase64Binary(buf);
             encriptacion = new String(encoded);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(null, "Algo salió mal");
+        } catch (UnsupportedEncodingException | InvalidKeyException | NoSuchAlgorithmException | BadPaddingException | IllegalBlockSizeException | NoSuchPaddingException ex) {
+           System.out.println(ex);
         }
         return encriptacion;
    

@@ -35,6 +35,8 @@ import javax.xml.bind.annotation.XmlRootElement;
     @NamedQuery(name = "Citas.findByHoraFin", query = "SELECT c FROM Citas c WHERE c.horaFin = :horaFin"),
     @NamedQuery(name = "Citas.findByDia", query = "SELECT c FROM Citas c WHERE c.dia = :dia"),
     @NamedQuery(name = "Citas.findByFechaRegistro", query = "SELECT c FROM Citas c WHERE c.fechaRegistro = :fechaRegistro"),
+    @NamedQuery(name = "Citas.findByMedAndUser", query = "SELECT c FROM Citas c WHERE c.idMedico = :idMedico AND c.idUsuario = :idUsuario"),
+    @NamedQuery(name = "Citas.findByIdMedAndDate", query = "SELECT c FROM Citas c WHERE c.idMedico = :idMedico and c.fechaRegistro = :fechaRegistro"),
     @NamedQuery(name = "Citas.findByNombrePaciente", query = "SELECT c FROM Citas c WHERE c.nombrePaciente = :nombrePaciente")})
 public class Citas implements Serializable {
     private static final long serialVersionUID = 1L;

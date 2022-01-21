@@ -40,12 +40,11 @@ public class DisponibilidadFacadeREST extends AbstractFacade<Disponibilidad> {
     @Override
     @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
     public void create(Disponibilidad entity) {
-        
-        entity.setHoraInicio((Integer.parseInt(entity.getHoraInicio().substring(0, 2))<12) ? entity.getHoraInicio()+"AM" : entity.getHoraInicio()+"PM");
-        entity.setHoraFin((Integer.parseInt(entity.getHoraFin().substring(0, 2))<12) ? entity.getHoraFin()+"AM" : entity.getHoraFin()+"PM");
-        
-        System.out.println("hola");
         super.create(entity);
+    }
+    
+    public void createAutomatical(Disponibilidad entity) {
+       super.create(entity);
     }
     
 
@@ -110,8 +109,15 @@ public class DisponibilidadFacadeREST extends AbstractFacade<Disponibilidad> {
     @Path("validate")
     @Produces({MediaType.APPLICATION_JSON})
     public boolean validate(Disponibilidad entity) {
-        System.out.println("-->"+entity.getDia());
         return true;
         
+    }
+    
+    public List<Disponibilidad> findByIdUsuarioAndDia(int id_UsuarioMed, String dia){
+      Query q = em.createNamedQuery("Disponibilidad.findByIdUsuarioAndDia", Disponibilidad.class);
+      q.setParameter("idUsuario",id_UsuarioMed );
+      q.setParameter("dia", dia);
+      System.out.println("lista: "+q.getResultList());
+      return q.getResultList();
     }
 }
